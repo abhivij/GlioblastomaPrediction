@@ -26,3 +26,10 @@ disease_data$disease_status[grepl('NSCLC', disease_data$disease_status)] <- 'NSC
 disease_data$disease_status[grepl('LGG', disease_data$disease_status)] <- 'NSCLC'
 disease_data$disease_status[!grepl('NSCLC', disease_data$disease_status)] <- 'HC'
 disease_data$disease_status <- factor(disease_data$disease_status)
+
+
+
+# filtering count_data
+cpm_data <- cpm(count_data)
+
+# colnames(count_data[colSums(count_data) == min(colSums(count_data))])
