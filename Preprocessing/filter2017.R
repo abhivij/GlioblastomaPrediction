@@ -33,3 +33,16 @@ disease_data$disease_status <- factor(disease_data$disease_status)
 cpm_data <- cpm(count_data)
 
 # colnames(count_data[colSums(count_data) == min(colSums(count_data))])
+
+min_total_count_genes <- sort((colSums(count_data)))[1:4]
+par(mfrow = c(2, 2))
+
+for(i in c(1:length(min_total_count_genes))){
+  gene <- names(min_total_count_genes)[i]
+  plot(cpm_data[, gene], count_data[, gene], main=gene, pch = i, ylim = c(0, 50), xlim = c(0, 1000))
+}
+
+threshold <- cpm_data > 1
+keep <- rowSums(threshold) >= 377
+summary(keep)
+filtered_data <- count_data[keep, ]
