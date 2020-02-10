@@ -22,9 +22,9 @@ disease_data <- data.frame(colnames(count_data))
 colnames(disease_data) <- 'sample_name'
 disease_data['disease_status'] <- disease_data$sample_name
 levels(disease_data$disease_status) <- c(levels(disease_data$disease_status), 'Cancer', 'NonCancer')
-disease_data$disease_status[grepl('NSCLC', disease_data$sample_name)] <- 'Cancer'
-disease_data$disease_status[grepl('LGG', disease_data$sample_name)] <- 'Cancer'
-disease_data$disease_status[!grepl('NSCLC', disease_data$sample_name)] <- 'NonCancer'
+disease_data$disease_status[grepl('NSCLC', disease_data$disease_status)] <- 'Cancer'
+disease_data$disease_status[grepl('LGG', disease_data$disease_status)] <- 'Cancer'
+disease_data$disease_status[!grepl('Cancer', disease_data$disease_status)] <- 'NonCancer'
 disease_data$disease_status <- factor(disease_data$disease_status)
 
 
@@ -64,3 +64,7 @@ normalized_data <- v$E
 colnames(normalized_data) <- disease_data$disease_status
 
 write.csv(normalized_data, "data/output/normalized_NSCLC_data.csv")
+
+dim(normalized_data)
+dim(count_data)
+summary(disease_data$disease_status)
