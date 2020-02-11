@@ -1,5 +1,5 @@
 # GlioblastomaPrediction-SummerProject-2020
-Prediction of Glioblastoma using Deep Learning Model employing Transfer Learning
+Prediction of Glioblastoma using neural network
 
 
 Reference Papers :
@@ -12,3 +12,6 @@ Using data provided in the above 2 papers :
 - https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE89843
 
 
+Commonly used words :
+ - GBM : Glioblastoma
+ - NSCLC : Non-small-cell Lung Carcinoma
