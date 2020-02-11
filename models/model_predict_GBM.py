@@ -45,8 +45,7 @@ def loss_function():
 	return tnn.BCEWithLogitsLoss()
 
 def main():
-	# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-	device = "cpu"
+	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 	print("Using device: " + str(device))
 
 	network = Network().to(device)
@@ -96,22 +95,23 @@ def main():
 
 
 def evaluate_model(network, data, data_name, device):
-	all_labels = []
-	all_prediction_prob = []
+	all_labels = np.array([])
+
+	all_prediction_prob = np.array([])
 
 	with torch.no_grad():
 		for inputs, labels in data:
 			inputs = inputs.to(device)
-			prediction = torch.sigmoid(network(inputs))   		
+			prediction = torch.sigmoid(network(inputs)).cpu().numpy()   		
 
-			all_labels.extend(labels)
-			all_prediction_prob.extend(prediction)
+			all_labels = np.concatenate((all_labels, labels))
+			all_prediction_prob = np.concatenate((all_prediction_prob, prediction))
 
 	all_predictions = np.round(all_prediction_prob)
 	accuracy = accuracy_score(all_labels, all_predictions)
 	auc = roc_auc_score(all_labels, all_prediction_prob)
 
-	print('Evaluating on ', data_name)
+	print('Evaluating on', data_name)
 	print("Accuracy : %.3f AUC : %.3f" % (accuracy, auc))
 
 
