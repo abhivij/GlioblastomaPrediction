@@ -41,6 +41,7 @@ class Dataset(data.Dataset):
         self.num_classes = len(self.labels)
         self.num_features = len(self.data[0][0])
 
+        print("Data tensor shape : ", self.data.shape)
         print("Num Features : %2d" % self.num_features)
         print("Num Classes : %2d" % self.num_classes)
 
