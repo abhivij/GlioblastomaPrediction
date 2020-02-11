@@ -1,3 +1,5 @@
+# reference code : https://github.com/VafaeeLab/UGVC1056_DeepLearning/blob/master/TEP/ModelL.py
+
 import torch
 import numpy as np
 import torch.nn as tnn
@@ -8,6 +10,8 @@ from dataset import Dataset
 
 import sklearn.metrics as metrics
 
+from sklearn.metrics import accuracy_score, roc_auc_score
+
 FEATURE_SIZE = 3368
 HIDDEN_LAYER_SIZE = 33
 
@@ -15,67 +19,101 @@ LEARNING_RATE = 0.005
 
 EPOCH = 5
 
+TRAIN_BATCH_SIZE = 2
+TEST_BATCH_SIZE = 8
+SET_RATIO = 0.2
+
+PATH = "../preprocessing/data/output/normalized_GBM_data.csv"
+
+
 class Network(tnn.Module):
 
-    def __init__(self):
-        super(Net, self).__init__()
-        self.fc1 = tnn.Linear(FEATURE_SIZE, HIDDEN_LAYER_SIZE)
-        self.fc2 = tnn.Linear(HIDDEN_LAYER_SIZE, 1)            
+	def __init__(self):
+		super(Network, self).__init__()
+		self.fc1 = tnn.Linear(FEATURE_SIZE, HIDDEN_LAYER_SIZE)
+		self.fc2 = tnn.Linear(HIDDEN_LAYER_SIZE, 1)            
 
-    def forward(self, input):
-        result = self.linear1(input)
-        # result = F.sigmoid(self.linear2(result))
-        result = self.linear2(result)
-        return result
+	def forward(self, input):
+		result = self.fc1(input)
+		# result = F.sigmoid(self.fc2(result))
+		result = self.fc2(result)
+		result = result.flatten()
+		return result
 
 def loss_function():
-	# return nn.CrossEntropyLoss()
-	return nn.BCEWithLogitsLoss()
+	# return tnn.CrossEntropyLoss()
+	return tnn.BCEWithLogitsLoss()
 
 def main():
-    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    device = "cpu"
-    print("Using device: " + str(device))
+	# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+	device = "cpu"
+	print("Using device: " + str(device))
 
-    data = ''
+	network = Network().to(device)
+	criterion = loss_function()
+	optimiser = torch.optim.Adam(network.parameters(), lr = LEARNING_RATE)  # Minimise the loss using the Adam algorithm.
 
-    network = Network().to(device)
-    criterion = loss_function()
-    optimiser = torch.optim.Adam(net.parameters(), lr = LEARNING_RATE)  # Minimise the loss using the Adam algorithm.
+	df = Dataset(PATH)
 
-    for epoch in range(EPOCH):
-        running_loss = 0
+	end = int(df.__len__())
+	indices = list([i for i in range(0, end)])
+	set_split = end - round(end * SET_RATIO)
+	train_indices = indices[0 : set_split]
+	test_indices = indices[set_split : end]
 
-    	for i in len(data):
+	training_data = data.DataLoader(df, batch_size = TRAIN_BATCH_SIZE, sampler = data.SubsetRandomSampler(train_indices))
+	test_data = data.DataLoader(df, batch_size = TEST_BATCH_SIZE, sampler = data.SubsetRandomSampler(test_indices))
 
-    		input = data[i][0]
-    		label = data[i][1]
+	training_data_batches = len(training_data)
+	test_data_batches = len(test_data)
 
-    		optimiser.zero_grad()
+	print('\nTraining ...')
+	for epoch in range(EPOCH):
+		running_loss = 0
 
-    		output = network(input)
+		for i, batch in enumerate(training_data):
+			inputs, labels = batch
 
-    		loss = criterion(output, label)
-    		loss.backward()
+			inputs, labels = inputs.to(device), labels.to(device)
 
-            optimiser.step()
+			optimiser.zero_grad()
 
-            running_loss += loss.item()
-            print("Epoch : %2d, Loss : %.3f" % (epoch+1, running_loss) )
+			outputs = network(inputs)
 
-    with torch.no_grad():
-    	prediction = []
-    	for i in len(data):
-     		input = data[i][0]
-    		label = data[i][1]
-    		
-    		output = torch.round(F.sigmoid(network(input)))   		
-    		prediction.append(output)
+			loss = criterion(outputs, labels.type_as(outputs))
+			loss.backward()
 
-    labels = data[, 1]
-   	accuracy = metrics.accuracy_score(prediction, labels)
+			optimiser.step()
 
-   	print("Accuracy : %.3f" % accuracy)
+			running_loss += loss.item()
+
+			if i % training_data_batches == training_data_batches - 1:
+				print("Epoch : %2d, Loss : %.3f" % (epoch+1, running_loss) )
+
+	print('\nEvaluating the network')
+	evaluate_model(network, training_data, 'training data', device)
+	evaluate_model(network, test_data, 'test data', device)
+
+
+def evaluate_model(network, data, data_name, device):
+	all_labels = []
+	all_prediction_prob = []
+
+	with torch.no_grad():
+		for inputs, labels in data:
+			inputs = inputs.to(device)
+			prediction = torch.sigmoid(network(inputs))   		
+
+			all_labels.extend(labels)
+			all_prediction_prob.extend(prediction)
+
+	all_predictions = np.round(all_prediction_prob)
+	accuracy = accuracy_score(all_labels, all_predictions)
+	auc = roc_auc_score(all_labels, all_prediction_prob)
+
+	print('Evaluating on ', data_name)
+	print("Accuracy : %.3f AUC : %.3f" % (accuracy, auc))
+
 
 if __name__ == "__main__":
 	main()
