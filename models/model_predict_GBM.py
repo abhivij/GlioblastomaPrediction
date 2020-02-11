@@ -15,12 +15,12 @@ from sklearn.metrics import accuracy_score, roc_auc_score
 FEATURE_SIZE = 3368
 HIDDEN_LAYER_SIZE = 33
 
-LEARNING_RATE = 0.005
+LEARNING_RATE = 0.000009
 
-EPOCH = 5
+EPOCH = 300
 
-TRAIN_BATCH_SIZE = 2
-TEST_BATCH_SIZE = 8
+TRAIN_BATCH_SIZE = 5
+TEST_BATCH_SIZE = 5
 SET_RATIO = 0.2
 
 PATH = "../preprocessing/data/output/normalized_GBM_data.csv"
