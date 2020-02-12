@@ -12,6 +12,8 @@ from sklearn.model_selection import train_test_split
 
 PATH = "../preprocessing/data/output/normalized_GBM_data.csv"
 
+METRIC_COMPUTATION_ITER = 5
+
 def read_data():
 	with open(PATH, 'r') as f:
 		string = f.readline()
@@ -33,7 +35,7 @@ def read_data():
 
 	return data, labels	
 
-def evaluate_model(model, data, labels, data_name, svm = False):
+def evaluate_model(model, data, labels, data_name, svm = False, print_details = False):
 	outputs = model.predict(data)
 	accuracy = accuracy_score(labels, outputs)
 
@@ -44,29 +46,44 @@ def evaluate_model(model, data, labels, data_name, svm = False):
 		predict_proba = np.array([val[1] for val in model.predict_proba(data)])
 		auc = roc_auc_score(labels, predict_proba)
 
-	print('Evaluating on', data_name)
-	print("Accuracy : %.3f AUC : %.3f" % (accuracy, auc))
+	if print_details:
+		print('Evaluating on', data_name)
+		print("Accuracy : %.3f AUC : %.3f" % (accuracy, auc))
+
+	return accuracy, auc
 
 def main():
 	data, labels = read_data()
-
 	data = preprocessing.scale(data)
 
-	training_data, test_data, training_labels, test_labels = train_test_split(data, labels, test_size = 0.2)
-
 	print('Logistic Regression --------')
-	log_reg_model = LogisticRegression(solver = 'liblinear') 
-	log_reg_model.fit(training_data, training_labels)
+	acc_list = []
+	auc_list = []
+	for _ in range(METRIC_COMPUTATION_ITER):
+		training_data, test_data, training_labels, test_labels = train_test_split(data, labels, test_size = 0.2)
+		log_reg_model = LogisticRegression(solver = 'liblinear') 
+		log_reg_model.fit(training_data, training_labels)
 
-	evaluate_model(log_reg_model, training_data, training_labels, 'training data')
-	evaluate_model(log_reg_model, test_data, test_labels, 'test data')	
+		evaluate_model(log_reg_model, training_data, training_labels, 'training data')
+		acc_tmp, auc_tmp = evaluate_model(log_reg_model, test_data, test_labels, 'test data', print_details = True)	
+		acc_list.append(acc_tmp)
+		auc_list.append(auc_tmp)
+	print("Accuracy : %.3f AUC : %.3f" % (np.mean(acc_list), np.mean(auc_list)))		
+
 
 	print('\nSVM --------')
-	svm_model = svm.SVC(gamma = 'scale')
-	svm_model.fit(training_data, training_labels)
+	acc_list = []
+	auc_list = []	
+	for _ in range(METRIC_COMPUTATION_ITER):
+		training_data, test_data, training_labels, test_labels = train_test_split(data, labels, test_size = 0.2)		
+		svm_model = svm.SVC(gamma = 'scale')
+		svm_model.fit(training_data, training_labels)
 
-	evaluate_model(svm_model, training_data, training_labels, 'training data', svm = True)
-	evaluate_model(svm_model, test_data, test_labels, 'test data', svm = True)	
+		evaluate_model(svm_model, training_data, training_labels, 'training data', svm = True)
+		acc_tmp, auc_tmp = evaluate_model(svm_model, test_data, test_labels, 'test data', svm = True, print_details = True)	
+		acc_list.append(acc_tmp)
+		auc_list.append(auc_tmp)
+	print("Accuracy : %.3f AUC : %.3f" % (np.mean(acc_list), np.mean(auc_list)))	
 
 if __name__ == '__main__':
 	main()
