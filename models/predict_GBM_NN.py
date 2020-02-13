@@ -72,27 +72,28 @@ def main():
 	print("Using device: " + str(device))
 
 	# print('Simple Network : Feedforward 3 layered : 3368-33-1')
-	# network = SimpleFFNetwork().to(device)
+	# network_function = SimpleFFNetwork
 	# criterion = tnn.BCEWithLogitsLoss()	# tnn.CrossEntropyLoss()
-	# optimiser = torch.optim.Adam(network.parameters(), lr = LEARNING_RATE)  # Minimise the loss using the Adam algorithm.	
-
-	# execute_model(network, criterion, optimiser, device)
+	
+	# execute_model(network_function, criterion, device)
 
 
 	print('Feed Forward Network : 3368-1000-100-10-1')
-	network = FeedForwardNetwork().to(device)
+	network_function = FeedForwardNetwork
 	criterion = tnn.BCEWithLogitsLoss()	# tnn.CrossEntropyLoss()
-	optimiser = torch.optim.Adam(network.parameters(), lr = LEARNING_RATE)  # Minimise the loss using the Adam algorithm.	
 
-	execute_model(network, criterion, optimiser, device)
+	execute_model(network_function, criterion, device)
 
 
-def execute_model(network, criterion, optimiser, device, print_details=False):
+def execute_model(network_function, criterion, device, print_details=False):
 
 	acc_list = []
 	auc_list = []
 
 	for _ in range(METRIC_COMPUTATION_ITER):
+		network = network_function().to(device)
+		optimiser = torch.optim.Adam(network.parameters(), lr = LEARNING_RATE)
+
 		df = Dataset(PATH)
 
 		end = int(df.__len__())
