@@ -71,11 +71,11 @@ def main():
 	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 	print("Using device: " + str(device))
 
-	# print('Simple Network : Feedforward 3 layered : 3368-33-1')
-	# network_function = SimpleFFNetwork
-	# criterion = tnn.BCEWithLogitsLoss()	# tnn.CrossEntropyLoss()
+	print('Simple Network : Feedforward 3 layered : 3368-33-1')
+	network_function = SimpleFFNetwork
+	criterion = tnn.BCEWithLogitsLoss()	# tnn.CrossEntropyLoss()
 	
-	# execute_model(network_function, criterion, device)
+	execute_model(network_function, criterion, device)
 
 
 	print('Feed Forward Network : 3368-1000-100-10-1')

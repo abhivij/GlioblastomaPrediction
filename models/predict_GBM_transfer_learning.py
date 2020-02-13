@@ -75,13 +75,12 @@ def main():
 	print('Simple Network : Feedforward 3 layered : 2708-27-1')
 	network_function = SimpleFFNetwork
 	criterion = tnn.BCEWithLogitsLoss()	# tnn.CrossEntropyLoss()
-	# execute_model(network_function, criterion, device)
-	# execute_tl_model(network_function, criterion, device)
+	execute_model(network_function, criterion, device)
+	execute_tl_model(network_function, criterion, device)
 
 	print('Feed Forward Network : 2708-1000-100-10-1')
 	network_function = FeedForwardNetwork
 	criterion = tnn.BCEWithLogitsLoss()	# tnn.CrossEntropyLoss()
-
 	execute_model(network_function, criterion, device)
 	execute_tl_model(network_function, criterion, device)
 
