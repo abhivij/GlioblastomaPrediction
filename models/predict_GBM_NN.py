@@ -11,6 +11,7 @@ from dataset import Dataset
 import sklearn.metrics as metrics
 
 from sklearn.metrics import accuracy_score, roc_auc_score
+from helper import calculate_aggregate_metric
 
 FEATURE_SIZE = 3368
 HIDDEN_LAYER_SIZE = 33
@@ -70,12 +71,12 @@ def main():
 	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 	print("Using device: " + str(device))
 
-	print('Simple Network : Feedforward 3 layered : 3368-33-1')
-	network = SimpleFFNetwork().to(device)
-	criterion = tnn.BCEWithLogitsLoss()	# tnn.CrossEntropyLoss()
-	optimiser = torch.optim.Adam(network.parameters(), lr = LEARNING_RATE)  # Minimise the loss using the Adam algorithm.	
+	# print('Simple Network : Feedforward 3 layered : 3368-33-1')
+	# network = SimpleFFNetwork().to(device)
+	# criterion = tnn.BCEWithLogitsLoss()	# tnn.CrossEntropyLoss()
+	# optimiser = torch.optim.Adam(network.parameters(), lr = LEARNING_RATE)  # Minimise the loss using the Adam algorithm.	
 
-	execute_model(network, criterion, optimiser, device)
+	# execute_model(network, criterion, optimiser, device)
 
 
 	print('Feed Forward Network : 3368-1000-100-10-1')
@@ -134,7 +135,10 @@ def execute_model(network, criterion, optimiser, device, print_details=False):
 		acc_list.append(acc_tmp)
 		auc_list.append(auc_tmp)
 
-	print("Accuracy : %.3f AUC : %.3f" % (np.mean(acc_list), np.mean(auc_list)))
+	accuracy, auc = calculate_aggregate_metric(acc_list, auc_list)
+	print("\nMin aggregate metric\nAccuracy : %.3f AUC : %.3f" % (accuracy, auc))
+	accuracy, auc = calculate_aggregate_metric(acc_list, auc_list, agg_type='mean')
+	print("Mean aggregate metric\nAccuracy : %.3f AUC : %.3f" % (accuracy, auc))
 
 
 def evaluate_model(network, data, data_name, device, print_details=False):

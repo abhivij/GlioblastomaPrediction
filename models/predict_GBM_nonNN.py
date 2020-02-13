@@ -10,6 +10,8 @@ import sklearn.metrics as metrics
 from sklearn.metrics import accuracy_score, roc_auc_score
 from sklearn.model_selection import train_test_split
 
+from helper import calculate_aggregate_metric
+
 PATH = "../preprocessing/data/output/normalized_GBM_data.csv"
 
 METRIC_COMPUTATION_ITER = 5
@@ -68,22 +70,27 @@ def main():
 		acc_tmp, auc_tmp = evaluate_model(log_reg_model, test_data, test_labels, 'test data', print_details = True)	
 		acc_list.append(acc_tmp)
 		auc_list.append(auc_tmp)
-	print("Accuracy : %.3f AUC : %.3f" % (np.mean(acc_list), np.mean(auc_list)))		
-
+	accuracy, auc = calculate_aggregate_metric(acc_list, auc_list)
+	print("\nMin aggregate metric\nAccuracy : %.3f AUC : %.3f" % (accuracy, auc))		
+	accuracy, auc = calculate_aggregate_metric(acc_list, auc_list, agg_type='mean')
+	print("Mean aggregate metric\nAccuracy : %.3f AUC : %.3f" % (accuracy, auc))
 
 	print('\nSVM --------')
 	acc_list = []
 	auc_list = []	
 	for _ in range(METRIC_COMPUTATION_ITER):
 		training_data, test_data, training_labels, test_labels = train_test_split(data, labels, test_size = 0.2)		
-		svm_model = svm.SVC(gamma = 'scale')
+		svm_model = svm.SVC(gamma = 'scale', kernel='linear')
 		svm_model.fit(training_data, training_labels)
 
 		evaluate_model(svm_model, training_data, training_labels, 'training data', svm = True)
 		acc_tmp, auc_tmp = evaluate_model(svm_model, test_data, test_labels, 'test data', svm = True, print_details = True)	
 		acc_list.append(acc_tmp)
 		auc_list.append(auc_tmp)
-	print("Accuracy : %.3f AUC : %.3f" % (np.mean(acc_list), np.mean(auc_list)))	
+	accuracy, auc = calculate_aggregate_metric(acc_list, auc_list)
+	print("\nMin aggregate metric\nAccuracy : %.3f AUC : %.3f" % (accuracy, auc))		
+	accuracy, auc = calculate_aggregate_metric(acc_list, auc_list, agg_type='mean')
+	print("Mean aggregate metric\nAccuracy : %.3f AUC : %.3f" % (accuracy, auc))
 
 if __name__ == '__main__':
 	main()
