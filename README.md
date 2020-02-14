@@ -1,5 +1,5 @@
 # GlioblastomaPrediction-SummerProject-2020
-Prediction of Glioblastoma using neural network
+Prediction of Glioblastoma from mRNA profiles of TEPs using transfer learning approach
 
 
 Reference Papers :
