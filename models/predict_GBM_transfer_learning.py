@@ -11,7 +11,7 @@ from dataset import Dataset
 import sklearn.metrics as metrics
 
 from sklearn.metrics import accuracy_score, roc_auc_score
-from helper import calculate_aggregate_metric
+from helper import calculate_aggregate_metric, write_metrics
 
 FEATURE_SIZE = 2708
 HIDDEN_LAYER_SIZE = 27
@@ -29,7 +29,7 @@ TRAIN_BATCH_SIZE = 5
 TEST_BATCH_SIZE = 5
 SET_RATIO = 0.2
 
-METRIC_COMPUTATION_ITER = 5
+METRIC_COMPUTATION_ITER = 30
 
 NSCLC_PATH = "../preprocessing/data/output/normalized_NSCLC_common_data.csv"
 GBM_PATH = "../preprocessing/data/output/normalized_GBM_common_data.csv"
@@ -85,7 +85,7 @@ def main():
 	execute_tl_model(network_function, criterion, device)
 
 
-def execute_model(network_function, criterion, device, print_details=True):
+def execute_model(network_function, criterion, device, print_details=False):
 
 	print('Using only GBM data')
 
@@ -103,13 +103,10 @@ def execute_model(network_function, criterion, device, print_details=True):
 		acc_list.append(acc_tmp)
 		auc_list.append(auc_tmp)
 
-	accuracy, auc = calculate_aggregate_metric(acc_list, auc_list)
-	print("\nMin aggregate metric\nAccuracy : %.3f AUC : %.3f" % (accuracy, auc))		
-	accuracy, auc = calculate_aggregate_metric(acc_list, auc_list, agg_type='mean')
-	print("Mean aggregate metric\nAccuracy : %.3f AUC : %.3f" % (accuracy, auc))
+	write_metrics(acc_list, auc_list)
 
 
-def execute_tl_model(network_function, criterion, device, print_details=True):
+def execute_tl_model(network_function, criterion, device, print_details=False):
 
 	print('Transfer Learning - pretraining using NSCLC data to predict GBM')
 	
@@ -128,10 +125,7 @@ def execute_tl_model(network_function, criterion, device, print_details=True):
 		acc_list.append(acc_tmp)
 		auc_list.append(auc_tmp)
 
-	accuracy, auc = calculate_aggregate_metric(acc_list, auc_list)
-	print("\nMin aggregate metric\nAccuracy : %.3f AUC : %.3f" % (accuracy, auc))		
-	accuracy, auc = calculate_aggregate_metric(acc_list, auc_list, agg_type='mean')
-	print("Mean aggregate metric\nAccuracy : %.3f AUC : %.3f" % (accuracy, auc))
+	write_metrics(acc_list, auc_list)
 
 
 def get_data_and_train_model(file_path, network, criterion, optimiser, device, print_details):

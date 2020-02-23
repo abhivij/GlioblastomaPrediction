@@ -11,7 +11,7 @@ from dataset import Dataset
 import sklearn.metrics as metrics
 
 from sklearn.metrics import accuracy_score, roc_auc_score
-from helper import calculate_aggregate_metric
+from helper import calculate_aggregate_metric, write_metrics
 
 FEATURE_SIZE = 3067
 HIDDEN_LAYER_SIZE = 30
@@ -29,7 +29,7 @@ TRAIN_BATCH_SIZE = 5
 TEST_BATCH_SIZE = 5
 SET_RATIO = 0.2
 
-METRIC_COMPUTATION_ITER = 5
+METRIC_COMPUTATION_ITER = 30
 
 PATH = "../preprocessing/data/output/normalized_NSCLC_data.csv"
 
@@ -132,14 +132,11 @@ def execute_model(network_function, criterion, device, print_details=False):
 						print("Epoch : %2d, Loss : %.3f" % (epoch+1, running_loss) )
 
 		evaluate_model(network, training_data, 'training data', device)
-		acc_tmp, auc_tmp = evaluate_model(network, test_data, 'test data', device, print_details=True)
+		acc_tmp, auc_tmp = evaluate_model(network, test_data, 'test data', device)
 		acc_list.append(acc_tmp)
 		auc_list.append(auc_tmp)
 
-	accuracy, auc = calculate_aggregate_metric(acc_list, auc_list)
-	print("\nMin aggregate metric\nAccuracy : %.3f AUC : %.3f" % (accuracy, auc))
-	accuracy, auc = calculate_aggregate_metric(acc_list, auc_list, agg_type='mean')
-	print("Mean aggregate metric\nAccuracy : %.3f AUC : %.3f" % (accuracy, auc))
+	write_metrics(acc_list, auc_list)
 
 
 def evaluate_model(network, data, data_name, device, print_details=False):
