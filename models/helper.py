@@ -1,8 +1,11 @@
 import numpy as np
 from csv import writer
+from datetime import datetime
 
 ACC_FILENAME = 'model_acc.csv'
 AUC_FILENAME = 'model_auc.csv'
+
+MODEL_PARAM_FILENAME = 'model_param.csv'
 
 DECIMALS = 4
 
@@ -36,13 +39,15 @@ def write_metrics(acc_list, auc_list):
 	print('Accuracy')
 	acc_list = round_list(acc_list)
 	print(','.join([str(e) for e in acc_list]))
-	with open(ACC_FILENAME, 'a+') as write_obj:
+	acc_filename = datetime.now().strftime("%d-%m-%Y_") + ACC_FILENAME
+	with open(acc_filename, 'a+') as write_obj:
 		csv_writer = writer(write_obj)
 		csv_writer.writerow(acc_list)	
 	print('AUC')
 	auc_list = round_list(auc_list)
 	print(','.join([str(e) for e in auc_list]))
-	with open(AUC_FILENAME, 'a+') as write_obj:
+	auc_filename = datetime.now().strftime("%d-%m-%Y_") + AUC_FILENAME
+	with open(auc_filename, 'a+') as write_obj:
 		csv_writer = writer(write_obj)
 		csv_writer.writerow(auc_list)	
 	accuracy, auc = calculate_aggregate_metric(acc_list, auc_list)
@@ -54,3 +59,31 @@ def write_metrics(acc_list, auc_list):
 
 def round_list(num_list):
 	return [round(e, DECIMALS) for e in num_list]
+
+
+def compute_param_sum(coeff, intercept, coeff_sum, intercept_sum):
+	if coeff_sum is None:
+		coeff_sum = coeff
+	else:
+		coeff_sum = coeff_sum + coeff
+	
+	if intercept_sum is None:
+		intercept_sum = intercept
+	else:
+		intercept_sum = intercept_sum + intercept
+
+	return coeff_sum, intercept_sum
+
+
+def write_model_params(coeff, intercept, model_name):
+	'''
+		writes to a file the model params in the form
+		intercept,coeff_feature1,coeff_feature2, ...
+	'''
+	filename = model_name + '_' + MODEL_PARAM_FILENAME
+	coeff = round_list(coeff)
+	intercept = round_list(intercept)
+	params = str(intercept[0]) + ',' + ','.join([str(e) for e in coeff])
+	with open(filename, 'w') as write_obj:
+		write_obj.write(params)
+	return
