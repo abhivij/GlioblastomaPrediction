@@ -54,16 +54,14 @@ def evaluate_model(model, data, labels, data_name, svm = False, print_details = 
 
 	return accuracy, auc
 
-def main():
-	data, labels = read_data()
-	data = preprocessing.scale(data)
-
+def execute_logistic(data, labels):
 	print('Logistic Regression --------')
 	acc_list = []
 	auc_list = []
 
 	coeff_sum = None
 	intercept_sum = None
+	data = preprocessing.scale(data)
 	for _ in range(METRIC_COMPUTATION_ITER):
 		training_data, test_data, training_labels, test_labels = train_test_split(data, labels, test_size = 0.2)
 		log_reg_model = LogisticRegression(solver = 'liblinear') 
@@ -81,9 +79,12 @@ def main():
 	intercept_mean = intercept_sum / METRIC_COMPUTATION_ITER
 	write_model_params(coeff_mean, intercept_mean, 'logistic')
 
+
+def execute_svm(data, labels):
 	print('\nSVM --------')
 	acc_list = []
 	auc_list = []	
+	data = preprocessing.scale(data)
 	for _ in range(METRIC_COMPUTATION_ITER):
 		training_data, test_data, training_labels, test_labels = train_test_split(data, labels, test_size = 0.2)		
 		svm_model = svm.SVC(gamma = 'scale', kernel='linear')
@@ -94,6 +95,14 @@ def main():
 		acc_list.append(acc_tmp)
 		auc_list.append(auc_tmp)
 	write_metrics(acc_list, auc_list)
+
+
+def main():
+	data, labels = read_data()
+
+	execute_logistic(data, labels)
+	execute_svm(data, labels)
+
 
 if __name__ == '__main__':
 	main()

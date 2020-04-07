@@ -1,5 +1,6 @@
 library(ggplot2)
 library(reshape2)
+library(ggbiplot)
 
 get_lower_tri <- function(cormat){
   cormat[upper.tri(cormat)]<- NA
@@ -7,7 +8,7 @@ get_lower_tri <- function(cormat){
 }
 
 
-normalized_GBM_data <- read.csv("../preprocessing/data/output/normalized_GBM_data.csv", row.names=1)
+normalized_GBM_data <- read.csv("preprocessing/data/output/normalized_GBM_data.csv", row.names=1)
 normalized_GBM_data <- as.data.frame(t(as.matrix(normalized_GBM_data)))
 
 #normalized_GBM_data <- normalized_GBM_data[,1:10]
@@ -30,3 +31,6 @@ my_cols <- c('red', 'blue')
 pairs(pca$x[, 1:10], pch=19,  cex = 0.5,
       col = my_cols[cancer_flag],
       lower.panel=NULL)
+
+write.csv(pca$x, "visualizations/data/gbm_pca_components.csv")
+dim(pca$x)
