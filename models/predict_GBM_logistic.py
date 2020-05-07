@@ -82,10 +82,21 @@ def get_logistic_prediction(data, weights):
 	return np.ravel(sigmoid(z))
 
 
-def execute_logistic(data, labels):
+def execute_logistic(data, labels, significant_weights = None):
 	print('Logistic Regression --------')
 	acc_list = []
 	auc_list = []
+
+	if significant_weights is not None:
+		print(significant_weights)
+		if significant_weights[0] == 0:
+			significant_weights = np.delete(significant_weights, 0)
+		significant_weights -= 1
+		print(significant_weights)
+		print(len(significant_weights))
+		print(data.shape)
+		data = data[:, significant_weights]
+		print(data.shape)
 
 	data = preprocessing.scale(data)
 
@@ -134,15 +145,16 @@ def execute_logistic(data, labels):
 
 		split_count += 1
 
+	write_metrics(acc_list, auc_list, write_to_file = False, show_all = False)
+
+	# if significant_weights is not None:
+	# 	return
+
+
 	coeff_mean = np.mean(all_iter_params, axis = 0)
 	coeff_se = stats.sem(all_iter_params)
 
 	coeff_z = coeff_mean / coeff_se
-
-	print(coeff_mean.shape)
-	print(coeff_se.shape)
-	print(coeff_z.shape)
-
 
 	coeff_CI_l = np.percentile(all_iter_params, 2.5, axis = 0)
 	coeff_CI_u = np.percentile(all_iter_params, 97.5, axis = 0)
@@ -150,31 +162,48 @@ def execute_logistic(data, labels):
 
 	x = np.array([i for i in range(num_params)])
 
-	plt.plot(x, coeff_mean)
-	plt.xlabel('Intercept and Features')
-	plt.ylabel('LogReg Model Mean Weights')
-	plt.show()
+	# plt.plot(x, coeff_mean)
+	# plt.xlabel('Intercept and Features')
+	# plt.ylabel('LogReg Model Mean Weights')
+	# plt.show()
 
-	plt.plot(x, coeff_se)
-	plt.xlabel('Intercept and Features')
-	plt.ylabel('LogReg Model Weights SE')
-	plt.show()
+	# plt.plot(x, coeff_se)
+	# plt.xlabel('Intercept and Features')
+	# plt.ylabel('LogReg Model Weights SE')
+	# plt.show()
 
-	plt.plot(x, coeff_se)
+	# plt.plot(x, coeff_z)
+	# plt.xlabel('Intercept and Features')
+	# plt.ylabel('LogReg Model Weights Z values')
+	# plt.show()
+
+	# fig, ax = plt.subplots()
+	# ax.plot(x, coeff_CI_u, label = 'Upper Limit')	
+	# ax.plot(x, coeff_CI_l, label = 'Lower Limit')
+	# legend = ax.legend(loc='upper left')
+	# plt.show()
+
+	# fig, ax = plt.subplots()
+	# ax.plot(x, coeff_mean)
+	# ax.fill_between(x, coeff_CI_l, coeff_CI_u, color='g')
+	# plt.show()
+
+
+	coeff_se_method2 = (coeff_CI_u - coeff_CI_l) / (2 * 1.96)
+	coeff_z_method2 = coeff_mean / coeff_se_method2
+
+	# plt.plot(x, coeff_se_method2)
+	# plt.xlabel('Intercept and Features')
+	# plt.ylabel('LogReg Model Weights SE')
+	# plt.show()
+
+	plt.scatter(x, coeff_z_method2, s=2)
 	plt.xlabel('Intercept and Features')
 	plt.ylabel('LogReg Model Weights Z values')
 	plt.show()
 
-	fig, ax = plt.subplots()
-	ax.plot(x, coeff_CI_u, label = 'Upper Limit')	
-	ax.plot(x, coeff_CI_l, label = 'Lower Limit')
-	legend = ax.legend(loc='upper left')
-	plt.show()
 
-	fig, ax = plt.subplots()
-	ax.plot(x, coeff_mean)
-	ax.fill_between(x, coeff_CI_l, coeff_CI_u, color='g')
-	plt.show()
+	#for now using method2 since, method2 results for Z look better, with shorter z range
 
 
 	# plt.hist(all_iter_params[:, 0], density = True)
@@ -191,19 +220,29 @@ def execute_logistic(data, labels):
 	# plt.show()
 	
 
-	write_metrics(acc_list, auc_list, write_to_file = False, show_all = False)
+	significant_weights = np.argwhere(np.absolute(coeff_z_method2) > 2).flatten()
+	print('Significant Weights : ', len(significant_weights))
+
+	plt.scatter(significant_weights, coeff_z_method2[significant_weights], s = 2)
+	plt.xlabel('Intercept and Features Selected')
+	plt.ylabel('LogReg Model Weights Z values')
+	plt.show()
+
+	print(significant_weights)
+
 
 	# print('Trying SM')
 	# training_data = sm.add_constant(training_data)
 	# model = sm.Logit(training_labels, training_data)
 	# result = model.fit()
 	# print(result.summary())
+	return significant_weights
 
 def main():
 	data, labels = read_data()
-	execute_logistic(data, labels)
+	significant_weights = execute_logistic(data, labels)
 
-
+	execute_logistic(data, labels, significant_weights)
 
 
 
