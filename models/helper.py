@@ -35,21 +35,26 @@ def calculate_aggregate_metric(accuracy_list, auc_list, agg_type = 'min'):
 
 	return accuracy, auc
 
-def write_metrics(acc_list, auc_list):
-	print('Accuracy')
+def write_metrics(acc_list, auc_list, write_to_file = True, show_all = True):
 	acc_list = round_list(acc_list)
-	print(','.join([str(e) for e in acc_list]))
-	acc_filename = datetime.now().strftime("%d-%m-%Y_") + ACC_FILENAME
-	with open(acc_filename, 'a+') as write_obj:
-		csv_writer = writer(write_obj)
-		csv_writer.writerow(acc_list)	
-	print('AUC')
 	auc_list = round_list(auc_list)
-	print(','.join([str(e) for e in auc_list]))
-	auc_filename = datetime.now().strftime("%d-%m-%Y_") + AUC_FILENAME
-	with open(auc_filename, 'a+') as write_obj:
-		csv_writer = writer(write_obj)
-		csv_writer.writerow(auc_list)	
+
+	if show_all:
+		print('Accuracy')
+		print(','.join([str(e) for e in acc_list]))
+		print('AUC')
+		print(','.join([str(e) for e in auc_list]))
+
+	if write_to_file:
+		acc_filename = datetime.now().strftime("%d-%m-%Y_") + ACC_FILENAME
+		with open(acc_filename, 'a+') as write_obj:
+			csv_writer = writer(write_obj)
+			csv_writer.writerow(acc_list)	
+		auc_filename = datetime.now().strftime("%d-%m-%Y_") + AUC_FILENAME
+		with open(auc_filename, 'a+') as write_obj:
+			csv_writer = writer(write_obj)
+			csv_writer.writerow(auc_list)	
+
 	accuracy, auc = calculate_aggregate_metric(acc_list, auc_list)
 	print("\nMin aggregate metric\nAccuracy : %.3f AUC : %.3f" % (accuracy, auc))		
 	accuracy, auc = calculate_aggregate_metric(acc_list, auc_list, agg_type='mean')

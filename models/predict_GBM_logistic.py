@@ -13,6 +13,7 @@ import pandas as pd
 from sklearn import datasets, linear_model
 from sklearn.linear_model import LinearRegression
 import statsmodels.api as sm
+
 from scipy import stats
 
 import matplotlib.pyplot as plt
@@ -22,6 +23,7 @@ from sklearn.model_selection import ShuffleSplit
 
 
 PATH = "../preprocessing/data/output/normalized_GBM_data.csv"
+NUM_SPLITS = 100
 
 def read_data():
 	with open(PATH, 'r') as f:
@@ -87,62 +89,115 @@ def execute_logistic(data, labels):
 
 	data = preprocessing.scale(data)
 
-	rs = ShuffleSplit(n_splits = 5, test_size = .2, random_state = 0)
+	num_params = data.shape[1] + 1
+	all_iter_params = np.zeros((NUM_SPLITS, num_params))
+	print(all_iter_params.shape)
+
+
+	rs = ShuffleSplit(n_splits = NUM_SPLITS, test_size = .2, random_state = 0)
+	split_count = 0
 	for train_index, test_index in rs.split(data):
 		training_data = data[train_index, :]
 		training_labels = labels[train_index]
 		test_data = data[test_index, :]
 		test_labels = labels[test_index]
 
-		print(training_data.shape)
-		print(training_labels.shape)
-		print(test_data.shape)
-		print(test_labels.shape)
+		log_reg_model = LogisticRegression(solver = 'liblinear') 
+		log_reg_model.fit(training_data, training_labels)
 
-	training_data, test_data, training_labels, test_labels = train_test_split(data, labels, test_size = 0.2)
-	log_reg_model = LogisticRegression(solver = 'liblinear', verbose = 1) 
-	log_reg_model.fit(training_data, training_labels)
+		all_iter_params[split_count, :] = np.append(log_reg_model.intercept_, log_reg_model.coef_)
 
-	params = np.append(log_reg_model.intercept_, log_reg_model.coef_)
+		evaluate_model(log_reg_model, training_data, training_labels, 'training data')
+		acc_tmp, auc_tmp = evaluate_model(log_reg_model, test_data, test_labels, 'test data')	
+		acc_list.append(acc_tmp)
+		auc_list.append(auc_tmp)
 
-	evaluate_model(log_reg_model, training_data, training_labels, 'training data')
-	acc, auc = evaluate_model(log_reg_model, test_data, test_labels, 'test data')	
+		# print('\nAccuracy : ', acc)
+		# print('AUC : ', auc)
 
-	print('\nAccuracy : ', acc)
-	print('AUC : ', auc)
-	print(len(params))
+		# print(log_reg_model.get_params())
+		# print(log_reg_model.classes_)
 
-	print(log_reg_model.get_params())
-	print(log_reg_model.classes_)
+		# print('\n\nTrying to predict with weights obtained....')
+		# prediction = get_logistic_prediction(test_data, all_iter_params[split_count, :])
+		# print('obtained prediction')
 
-	print('\n\nTrying to predict with weights obtained....')
-	prediction = get_logistic_prediction(test_data, params)
-	print('obtained prediction')
+		# print('prediction from weights')
+		# print(prediction)
+		# print('prediction from sklearn predict_proba')
+		# sklearn_prediction = np.array([val[1] for val in log_reg_model.predict_proba(test_data)])
+		# print(sklearn_prediction)
+		# print('prediction from sklearn predict')
+		# print(log_reg_model.predict(test_data))
+		# print('actual test labels')
+		# print(test_labels)
 
-	print('prediction from weights')
-	print(prediction)
-	print('prediction from sklearn predict_proba')
-	sklearn_prediction = np.array([val[1] for val in log_reg_model.predict_proba(test_data)])
-	print(sklearn_prediction)
-	print('prediction from sklearn predict')
-	print(log_reg_model.predict(test_data))
-	print('actual test labels')
-	print(test_labels)
+		split_count += 1
 
-	# check = prediction - sklearn_prediction
-	# print(check)
+	coeff_mean = np.mean(all_iter_params, axis = 0)
+	coeff_se = stats.sem(all_iter_params)
 
-	plt.plot(params)
-	plt.ylabel('LogReg Model Weights')
+	coeff_z = coeff_mean / coeff_se
+
+	print(coeff_mean.shape)
+	print(coeff_se.shape)
+	print(coeff_z.shape)
+
+
+	coeff_CI_l = np.percentile(all_iter_params, 2.5, axis = 0)
+	coeff_CI_u = np.percentile(all_iter_params, 97.5, axis = 0)
+
+
+	x = np.array([i for i in range(num_params)])
+
+	plt.plot(x, coeff_mean)
+	plt.xlabel('Intercept and Features')
+	plt.ylabel('LogReg Model Mean Weights')
 	plt.show()
 
+	plt.plot(x, coeff_se)
+	plt.xlabel('Intercept and Features')
+	plt.ylabel('LogReg Model Weights SE')
+	plt.show()
+
+	plt.plot(x, coeff_se)
+	plt.xlabel('Intercept and Features')
+	plt.ylabel('LogReg Model Weights Z values')
+	plt.show()
+
+	fig, ax = plt.subplots()
+	ax.plot(x, coeff_CI_u, label = 'Upper Limit')	
+	ax.plot(x, coeff_CI_l, label = 'Lower Limit')
+	legend = ax.legend(loc='upper left')
+	plt.show()
+
+	fig, ax = plt.subplots()
+	ax.plot(x, coeff_mean)
+	ax.fill_between(x, coeff_CI_l, coeff_CI_u, color='g')
+	plt.show()
+
+
+	# plt.hist(all_iter_params[:, 0], density = True)
+	# plt.xlabel('Intercept values')
+	# plt.show()
+
+
+	# plt.hist(all_iter_params[:, 1], density = True)
+	# plt.xlabel('w1 values')
+	# plt.show()
+
+	# plt.hist(all_iter_params[:, 10], density = True)
+	# plt.xlabel('w10 values')
+	# plt.show()
+	
+
+	write_metrics(acc_list, auc_list, write_to_file = False, show_all = False)
 
 	# print('Trying SM')
 	# training_data = sm.add_constant(training_data)
 	# model = sm.Logit(training_labels, training_data)
 	# result = model.fit()
 	# print(result.summary())
-
 
 def main():
 	data, labels = read_data()
