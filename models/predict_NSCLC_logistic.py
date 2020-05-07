@@ -22,7 +22,7 @@ from sklearn.model_selection import ShuffleSplit
 
 
 
-PATH = "../preprocessing/data/output/normalized_GBM_data.csv"
+PATH = "../preprocessing/data/output/normalized_NSCLC_data.csv"
 NUM_SPLITS = 100
 
 def read_data():
@@ -222,6 +222,7 @@ def execute_logistic(data, labels, significant_weights = None):
 	# plt.xlabel('w10 values')
 	# plt.show()
 	
+
 	# significant_weights = np.argwhere(np.absolute(coeff_mean) > 0).flatten()
 
 
