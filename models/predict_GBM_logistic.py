@@ -15,6 +15,9 @@ from sklearn.linear_model import LinearRegression
 import statsmodels.api as sm
 from scipy import stats
 
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import ShuffleSplit
 
 
 
@@ -44,22 +47,38 @@ def read_data():
 
 	return data, labels	
 
-def evaluate_model(model, data, labels, data_name, svm = False, print_details = False):
+
+def evaluate_model(model, data, labels, data_name, print_details = False):
 	outputs = model.predict(data)
 	accuracy = accuracy_score(labels, outputs)
 
-	if svm:
-		decision_function = model.decision_function(data)
-		auc = roc_auc_score(labels, decision_function)
-	else:
-		predict_proba = np.array([val[1] for val in model.predict_proba(data)])
-		auc = roc_auc_score(labels, predict_proba)
+	predict_proba = np.array([val[1] for val in model.predict_proba(data)])
+	auc = roc_auc_score(labels, predict_proba)
 
 	if print_details:
 		print('Evaluating on', data_name)
 		print("Accuracy : %.3f AUC : %.3f" % (accuracy, auc))
 
 	return accuracy, auc
+
+
+def sigmoid(x):
+	return 1 / (1 + np.exp(-x))
+
+
+def get_logistic_prediction(data, weights):
+	n = data.shape[0]
+	k = weights.shape[0]
+
+	data = np.hstack((np.ones((n, 1)), data))
+	weights = np.reshape(weights, (k, 1))
+
+	print(data.shape)
+	print(weights.shape)
+
+	z = np.matmul(data, weights)
+	return np.ravel(sigmoid(z))
+
 
 def execute_logistic(data, labels):
 	print('Logistic Regression --------')
@@ -68,8 +87,20 @@ def execute_logistic(data, labels):
 
 	data = preprocessing.scale(data)
 
+	rs = ShuffleSplit(n_splits = 5, test_size = .2, random_state = 0)
+	for train_index, test_index in rs.split(data):
+		training_data = data[train_index, :]
+		training_labels = labels[train_index]
+		test_data = data[test_index, :]
+		test_labels = labels[test_index]
+
+		print(training_data.shape)
+		print(training_labels.shape)
+		print(test_data.shape)
+		print(test_labels.shape)
+
 	training_data, test_data, training_labels, test_labels = train_test_split(data, labels, test_size = 0.2)
-	log_reg_model = LogisticRegression(solver = 'liblinear') 
+	log_reg_model = LogisticRegression(solver = 'liblinear', verbose = 1) 
 	log_reg_model.fit(training_data, training_labels)
 
 	params = np.append(log_reg_model.intercept_, log_reg_model.coef_)
@@ -77,21 +108,49 @@ def execute_logistic(data, labels):
 	evaluate_model(log_reg_model, training_data, training_labels, 'training data')
 	acc, auc = evaluate_model(log_reg_model, test_data, test_labels, 'test data')	
 
-	print('Accuracy : ', acc)
+	print('\nAccuracy : ', acc)
 	print('AUC : ', auc)
 	print(len(params))
+
+	print(log_reg_model.get_params())
+	print(log_reg_model.classes_)
+
+	print('\n\nTrying to predict with weights obtained....')
+	prediction = get_logistic_prediction(test_data, params)
+	print('obtained prediction')
+
+	print('prediction from weights')
+	print(prediction)
+	print('prediction from sklearn predict_proba')
+	sklearn_prediction = np.array([val[1] for val in log_reg_model.predict_proba(test_data)])
+	print(sklearn_prediction)
+	print('prediction from sklearn predict')
+	print(log_reg_model.predict(test_data))
+	print('actual test labels')
+	print(test_labels)
+
+	# check = prediction - sklearn_prediction
+	# print(check)
+
+	plt.plot(params)
+	plt.ylabel('LogReg Model Weights')
+	plt.show()
+
+
+	# print('Trying SM')
+	# training_data = sm.add_constant(training_data)
+	# model = sm.Logit(training_labels, training_data)
+	# result = model.fit()
+	# print(result.summary())
 
 
 def main():
 	data, labels = read_data()
-	# execute_logistic(data, labels)
+	execute_logistic(data, labels)
 
 
 
-	data = sm.add_constant(data)
-	model = sm.Logit(labels, data)
-	result = model.fit()
-	print(result.summary())
+
 
 
 
