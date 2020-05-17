@@ -21,18 +21,19 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import ShuffleSplit
 
 
+import argparse
 
-PATH = "../preprocessing/data/output/normalized_NSCLC_data.csv"
+
 NUM_SPLITS = 100
 
-def read_data():
-	with open(PATH, 'r') as f:
+def read_data(path):
+	with open(path, 'r') as f:
 		string = f.readline()
 
 	tags = string.replace('"', '').strip().split(sep=',')
 	tags.pop(0)
 
-	data = np.genfromtxt(PATH, delimiter=',')
+	data = np.genfromtxt(path, delimiter=',')
 	data = data[1:]
 	data = np.delete(data, 0, 1)
 	data = np.swapaxes(data, 0, 1)
@@ -64,30 +65,12 @@ def evaluate_model(model, data, labels, data_name, print_details = False):
 	return accuracy, auc
 
 
-def sigmoid(x):
-	return 1 / (1 + np.exp(-x))
-
-
-def get_logistic_prediction(data, weights):
-	n = data.shape[0]
-	k = weights.shape[0]
-
-	data = np.hstack((np.ones((n, 1)), data))
-	weights = np.reshape(weights, (k, 1))
-
-	print(data.shape)
-	print(weights.shape)
-
-	z = np.matmul(data, weights)
-	return np.ravel(sigmoid(z))
-
-
-def execute_logistic(data, labels, significant_weights = None):
-	print('Logistic Regression --------')
+def execute_logistic(data, labels, penalty, significant_weights = None):
+	if not penalty:
+		penalty = 'l2'
+	print('Logistic Regression with', penalty, 'penalty ....')
 	acc_list = []
 	auc_list = []
-
-	penalty = 'l2'
 
 	if significant_weights is not None:
 		if significant_weights[0] == 0:
@@ -222,7 +205,6 @@ def execute_logistic(data, labels, significant_weights = None):
 	# plt.xlabel('w10 values')
 	# plt.show()
 	
-
 	# significant_weights = np.argwhere(np.absolute(coeff_mean) > 0).flatten()
 
 
@@ -245,10 +227,20 @@ def execute_logistic(data, labels, significant_weights = None):
 	return significant_weights
 
 def main():
-	data, labels = read_data()
-	significant_weights = execute_logistic(data, labels)
+	parser = argparse.ArgumentParser()
+	parser.add_argument("--file_path", "-fp", type = str, required = True, help = 'File path including the file name of the data file')
+	parser.add_argument("--penalty", "-p", type = str, help = 'penalty used in logistic regression regularization (only supports l1 and l2, default is l2)')
+	args = parser.parse_args()
 
-	execute_logistic(data, labels, significant_weights)
+	path = args.file_path
+	penalty = args.penalty
+
+	print('Executing the model on', path.split('/')[-1])
+
+	data, labels = read_data(path)
+	significant_weights = execute_logistic(data, labels, penalty)
+
+	execute_logistic(data, labels, penalty, significant_weights)
 
 
 
