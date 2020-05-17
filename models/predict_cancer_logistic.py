@@ -1,30 +1,23 @@
 import numpy as np
+
 from sklearn.linear_model import LogisticRegression
-from sklearn import svm
 from sklearn import preprocessing
-import sklearn.metrics as metrics
+from sklearn.model_selection import ShuffleSplit
 from sklearn.metrics import accuracy_score, roc_auc_score
 from sklearn.model_selection import train_test_split
-
-from helper import calculate_aggregate_metric, write_metrics, compute_param_sum, write_model_params
-
-
-import pandas as pd
-from sklearn import datasets, linear_model
-from sklearn.linear_model import LinearRegression
-import statsmodels.api as sm
 
 from scipy import stats
 
 import matplotlib.pyplot as plt
 
-from sklearn.model_selection import ShuffleSplit
-
-
 import argparse
+
+from helper import calculate_aggregate_metric, write_metrics, compute_param_sum, write_model_params
+
 
 
 NUM_SPLITS = 100
+
 
 def read_data(path):
 	with open(path, 'r') as f:
@@ -83,8 +76,6 @@ def execute_logistic(data, labels, penalty, significant_weights = None):
 
 	num_params = data.shape[1] + 1
 	all_iter_params = np.zeros((NUM_SPLITS, num_params))
-	print(all_iter_params.shape)
-
 
 	rs = ShuffleSplit(n_splits = NUM_SPLITS, test_size = .2, random_state = 0)
 	split_count = 0
@@ -104,26 +95,6 @@ def execute_logistic(data, labels, penalty, significant_weights = None):
 		acc_list.append(acc_tmp)
 		auc_list.append(auc_tmp)
 
-		# print('\nAccuracy : ', acc)
-		# print('AUC : ', auc)
-
-		# print(log_reg_model.get_params())
-		# print(log_reg_model.classes_)
-
-		# print('\n\nTrying to predict with weights obtained....')
-		# prediction = get_logistic_prediction(test_data, all_iter_params[split_count, :])
-		# print('obtained prediction')
-
-		# print('prediction from weights')
-		# print(prediction)
-		# print('prediction from sklearn predict_proba')
-		# sklearn_prediction = np.array([val[1] for val in log_reg_model.predict_proba(test_data)])
-		# print(sklearn_prediction)
-		# print('prediction from sklearn predict')
-		# print(log_reg_model.predict(test_data))
-		# print('actual test labels')
-		# print(test_labels)
-
 		split_count += 1
 
 	write_metrics(acc_list, auc_list, write_to_file = False, show_all = False)
@@ -131,7 +102,7 @@ def execute_logistic(data, labels, penalty, significant_weights = None):
 	if significant_weights is not None:
 		return
 
-
+	#calculating z value - method 1
 	coeff_mean = np.mean(all_iter_params, axis = 0)
 	coeff_se = stats.sem(all_iter_params)
 
@@ -140,7 +111,6 @@ def execute_logistic(data, labels, penalty, significant_weights = None):
 	coeff_CI_l = np.percentile(all_iter_params, 2.5, axis = 0)
 	coeff_CI_u = np.percentile(all_iter_params, 97.5, axis = 0)
 
-
 	x = np.array([i for i in range(num_params)])
 
 	plt.plot(x, coeff_mean)
@@ -148,83 +118,39 @@ def execute_logistic(data, labels, penalty, significant_weights = None):
 	plt.ylabel('LogReg Model Mean Weights')
 	plt.show()
 
-	# plt.plot(x, coeff_se)
-	# plt.xlabel('Intercept and Features')
-	# plt.ylabel('LogReg Model Weights SE')
-	# plt.show()
-
-	# plt.plot(x, coeff_z)
-	# plt.xlabel('Intercept and Features')
-	# plt.ylabel('LogReg Model Weights Z values')
-	# plt.show()
-
-	# fig, ax = plt.subplots()
-	# ax.plot(x, coeff_CI_u, label = 'Upper Limit')	
-	# ax.plot(x, coeff_CI_l, label = 'Lower Limit')
-	# legend = ax.legend(loc='upper left')
-	# plt.show()
-
 	fig, ax = plt.subplots()
 	ax.plot(x, coeff_mean)
 	ax.fill_between(x, coeff_CI_l, coeff_CI_u, color='g')
+	plt.xlabel('Intercept and Features')
+	plt.ylabel('LogReg Model Mean Weights with CI')	
 	plt.show()
 
-
+	#calculating z value - method 2
 	coeff_se_method2 = (coeff_CI_u - coeff_CI_l) / (2 * 1.96)
 	coeff_z_method2 = coeff_mean / coeff_se_method2
 
-	# plt.plot(x, coeff_se_method2)
-	# plt.xlabel('Intercept and Features')
-	# plt.ylabel('LogReg Model Weights SE')
-	# plt.show()
+	plt.scatter(x, coeff_z, s=2)
+	plt.xlabel('Intercept and Features')
+	plt.ylabel('LogReg Model Weights Z values - method 1')
+	plt.show()
 
 	plt.scatter(x, coeff_z_method2, s=2)
 	plt.xlabel('Intercept and Features')
 	plt.ylabel('LogReg Model Weights Z values')
 	plt.show()
 
-
-	print(len(coeff_mean))
-	print(len(coeff_CI_u))
-	print(len(coeff_CI_l))
-	print(len(coeff_z_method2))
-
 	#for now using method2 since, method2 results for Z look better, with shorter z range
 
-
-	# plt.hist(all_iter_params[:, 0], density = True)
-	# plt.xlabel('Intercept values')
-	# plt.show()
-
-
-	# plt.hist(all_iter_params[:, 1], density = True)
-	# plt.xlabel('w1 values')
-	# plt.show()
-
-	# plt.hist(all_iter_params[:, 10], density = True)
-	# plt.xlabel('w10 values')
-	# plt.show()
-	
-	# significant_weights = np.argwhere(np.absolute(coeff_mean) > 0).flatten()
-
-
 	significant_weights = np.argwhere(np.absolute(coeff_z_method2) > 2).flatten()
-	print('Significant Weights : ', len(significant_weights))
+	print('Number of significant Weights : ', len(significant_weights))
 
 	plt.scatter(significant_weights, coeff_z_method2[significant_weights], s = 2)
 	plt.xlabel('Intercept and Features Selected')
 	plt.ylabel('LogReg Model Weights Z values')
 	plt.show()
 
-	print(significant_weights)
-
-
-	# print('Trying SM')
-	# training_data = sm.add_constant(training_data)
-	# model = sm.Logit(training_labels, training_data)
-	# result = model.fit()
-	# print(result.summary())
 	return significant_weights
+
 
 def main():
 	parser = argparse.ArgumentParser()
@@ -241,9 +167,6 @@ def main():
 	significant_weights = execute_logistic(data, labels, penalty)
 
 	execute_logistic(data, labels, penalty, significant_weights)
-
-
-
 
 
 if __name__ == '__main__':
