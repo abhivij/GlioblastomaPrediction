@@ -1,10 +1,11 @@
 import numpy as np
 
 from sklearn.linear_model import LogisticRegression
-from sklearn import preprocessing
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import ShuffleSplit
 from sklearn.metrics import accuracy_score, roc_auc_score
 from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
 
 from scipy import stats
 
@@ -44,11 +45,11 @@ def read_data(path):
 	return data, labels	
 
 
-def evaluate_model(model, data, labels, data_name, print_details = False):
-	outputs = model.predict(data)
+def evaluate_model(pipe, data, labels, data_name, print_details = False):
+	outputs = pipe.predict(data)
 	accuracy = accuracy_score(labels, outputs)
 
-	predict_proba = np.array([val[1] for val in model.predict_proba(data)])
+	predict_proba = np.array([val[1] for val in pipe.predict_proba(data)])
 	auc = roc_auc_score(labels, predict_proba)
 
 	if print_details:
@@ -72,8 +73,6 @@ def execute_logistic(data, labels, penalty, significant_weights = None):
 		data = data[:, significant_weights]
 		print(data.shape)
 
-	data = preprocessing.scale(data)
-
 	num_params = data.shape[1] + 1
 	all_iter_params = np.zeros((NUM_SPLITS, num_params))
 
@@ -86,12 +85,14 @@ def execute_logistic(data, labels, penalty, significant_weights = None):
 		test_labels = labels[test_index]
 
 		log_reg_model = LogisticRegression(solver = 'liblinear', penalty = penalty) 
-		log_reg_model.fit(training_data, training_labels)
+
+		pipe = Pipeline([('scaler', StandardScaler()), ('logreg', log_reg_model)])
+		pipe.fit(training_data, training_labels)
 
 		all_iter_params[split_count, :] = np.append(log_reg_model.intercept_, log_reg_model.coef_)
 
-		evaluate_model(log_reg_model, training_data, training_labels, 'training data')
-		acc_tmp, auc_tmp = evaluate_model(log_reg_model, test_data, test_labels, 'test data')	
+		evaluate_model(pipe, training_data, training_labels, 'training data')
+		acc_tmp, auc_tmp = evaluate_model(pipe, test_data, test_labels, 'test data')	
 		acc_list.append(acc_tmp)
 		auc_list.append(auc_tmp)
 
