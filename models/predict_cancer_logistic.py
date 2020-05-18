@@ -2,9 +2,8 @@ import numpy as np
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import ShuffleSplit
+from sklearn.model_selection import ShuffleSplit, train_test_split
 from sklearn.metrics import accuracy_score, roc_auc_score
-from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 
 from scipy import stats
@@ -62,7 +61,7 @@ def evaluate_model(pipe, data, labels, data_name, print_details = False):
 def execute_logistic(data, labels, penalty, significant_weights = None):
 	if not penalty:
 		penalty = 'l2'
-	print('Logistic Regression with', penalty, 'penalty ....')
+	print('\nLogistic Regression with', penalty, 'penalty ....')
 	acc_list = []
 	auc_list = []
 
@@ -76,13 +75,20 @@ def execute_logistic(data, labels, penalty, significant_weights = None):
 	num_params = data.shape[1] + 1
 	all_iter_params = np.zeros((NUM_SPLITS, num_params))
 
-	rs = ShuffleSplit(n_splits = NUM_SPLITS, test_size = .2, random_state = 0)
+	#creating a separate test set for final evaluation
+	training_data, test_data, training_labels, test_labels = train_test_split(data, labels, test_size = 0.2, random_state = 0)
+	data = training_data
+	labels = training_labels
+	print('training data size :', data.shape, 'training labels size :', labels.shape)
+	print('test data size :', test_data.shape, 'test labels size :', test_labels.shape)
+
+	rs = ShuffleSplit(n_splits = NUM_SPLITS, test_size = 0.2, random_state = 0)
 	split_count = 0
-	for train_index, test_index in rs.split(data):
+	for train_index, validation_index in rs.split(data):
 		training_data = data[train_index, :]
 		training_labels = labels[train_index]
-		test_data = data[test_index, :]
-		test_labels = labels[test_index]
+		validation_data = data[validation_index, :]
+		validation_labels = labels[validation_index]
 
 		log_reg_model = LogisticRegression(solver = 'liblinear', penalty = penalty) 
 
@@ -92,13 +98,21 @@ def execute_logistic(data, labels, penalty, significant_weights = None):
 		all_iter_params[split_count, :] = np.append(log_reg_model.intercept_, log_reg_model.coef_)
 
 		evaluate_model(pipe, training_data, training_labels, 'training data')
-		acc_tmp, auc_tmp = evaluate_model(pipe, test_data, test_labels, 'test data')	
+		acc_tmp, auc_tmp = evaluate_model(pipe, validation_data, validation_labels, 'validation data')	
 		acc_list.append(acc_tmp)
 		auc_list.append(auc_tmp)
 
 		split_count += 1
 
-	write_metrics(acc_list, auc_list, write_to_file = False, show_all = False)
+	write_metrics(acc_list, auc_list, write_to_file = False, show_all = False)	
+
+	#evaluating on the separated out test data set
+	log_reg_model = LogisticRegression(solver = 'liblinear', penalty = penalty) 
+	pipe = Pipeline([('scaler', StandardScaler()), ('logreg', log_reg_model)])
+	pipe.fit(data, labels)
+	acc, auc = evaluate_model(pipe, test_data, test_labels, 'test data')
+	print('\nEvaluating on test data ...')	
+	write_metrics([acc], [auc], write_to_file = False, show_all = False)
 
 	if significant_weights is not None:
 		return

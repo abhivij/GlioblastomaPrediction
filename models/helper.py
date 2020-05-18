@@ -56,7 +56,7 @@ def write_metrics(acc_list, auc_list, write_to_file = True, show_all = True):
 			csv_writer.writerow(auc_list)	
 
 	accuracy, auc = calculate_aggregate_metric(acc_list, auc_list)
-	print("\nMin aggregate metric\nAccuracy : %.3f AUC : %.3f" % (accuracy, auc))		
+	print("Min aggregate metric\nAccuracy : %.3f AUC : %.3f" % (accuracy, auc))		
 	accuracy, auc = calculate_aggregate_metric(acc_list, auc_list, agg_type='mean')
 	print("Mean aggregate metric\nAccuracy : %.3f AUC : %.3f" % (accuracy, auc))
 
