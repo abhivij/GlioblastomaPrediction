@@ -1,3 +1,5 @@
+library(glmnet)
+
 setwd('~/UNSW/VafaeeLab/GlioblastomaPrediction/')
 
 normalized_GBM_data <- read.csv("preprocessing/data/output/normalized_GBM_data.csv", row.names=1)
@@ -28,20 +30,32 @@ test_scaled$cancer <- test_labels
 
 start <- Sys.time()
 model <- glm(cancer ~., family=binomial(link='logit'), data=train_scaled)
+
+train_matrix <- model.matrix(cancer ~., train_scaled)
+
+#alpha = 0 => l2 regularization (ridge)
+cv.out <- cv.glmnet(train_matrix, train_scaled$cancer, alpha = 0, family = 'binomial', type.measure = 'mse')
+plot(cv.out)
+
+lambda_min <- cv.out$lambda.min
+lambda_1se <- cv.out$lambda.1se
+
+
+test_matrix <- model.matrix(cancer ~., test_scaled)
+l2_prob <- predict(cv.out, newx = test_matrix, s = lambda_1se, type = 'response')
+l2_labels <- ifelse(l2_prob > 0.5, 1, 0)
+
 print(paste("Time Taken : ", Sys.time() - start))
 
-test_predictions <- predict(model, test_scaled, type='response')
-test_prediction_labels <- ifelse(test_predictions > 0.5, 1, 0)
-
-acc <- mean(test_prediction_labels == test_scaled$cancer)
+acc <- mean(l2_labels == test_scaled$cancer)
 print(paste('Accuracy : ', acc))
 
 
 library(ROCR)
 
-pr <- prediction(test_predictions, test_scaled$cancer)
+pr <- prediction(l2_prob, test_scaled$cancer)
 prf <- performance(pr, measure = "tpr", x.measure = "fpr")
-plot(prf)
+# plot(prf)
 
 auc <- performance(pr, measure = "auc")
 auc <- auc@y.values[[1]]
